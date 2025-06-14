@@ -52,7 +52,6 @@ func (identity *Identity) BeforeCreate(tx *gorm.DB) (err error) {
 	if identity.ID == "" {
 		identity.ID = uuid.New().String()
 	}
-
 	return nil
 }
 
