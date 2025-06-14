@@ -27,7 +27,7 @@ const (
 )
 
 type Request struct {
-	ID                    string        `gorm:"type:char(32);primaryKey;unique" json:"id"`
+	ID                    string        `gorm:"type:char(36);primaryKey;unique" json:"id"`
 	Reference             string        `gorm:"type:varchar(255);not null;unique" json:"reference"`
 	RedirectURL           string        `gorm:"type:varchar(255);not null" json:"redirect_url"`
 	KYCLevel              KYCLevel      `gorm:"type:enum('tier_1','tier_2','tier_3');default:'tier_1'" json:"kyc_level"`
