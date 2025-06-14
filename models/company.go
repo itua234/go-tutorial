@@ -28,36 +28,35 @@ func (Company) TableName() string {
 }
 
 // BeforeCreate GORM hook to hash password before creating
-func (c *Company) BeforeCreate(tx *gorm.DB) (err error) {
-	if c.Password != nil && *c.Password != "" {
-		hashed, err := bcrypt.GenerateFromPassword([]byte(*c.Password), bcrypt.DefaultCost)
+func (company *Company) BeforeCreate(tx *gorm.DB) (err error) {
+	if company.ID == "" {
+		company.ID = uuid.New().String()
+	}
+	if company.Password != nil && *company.Password != "" {
+		hashed, err := bcrypt.GenerateFromPassword([]byte(*company.Password), bcrypt.DefaultCost)
 		if err != nil {
 			return err
 		}
 		pw := string(hashed)
-		c.Password = &pw
+		company.Password = &pw
 	}
-	if c.Email != "" {
-		c.Email = lower(c.Email)
+	if company.Email != "" {
+		company.Email = lower(company.Email)
 	}
 	return nil
 }
 
-// BeforeUpdate GORM hook to hash password before updating
-func (c *Company) BeforeUpdate(tx *gorm.DB) (err error) {
-	if c.ID == "" {
-		c.ID = uuid.New().String()
-	}
-	if c.Password != nil && *c.Password != "" {
-		hashed, err := bcrypt.GenerateFromPassword([]byte(*c.Password), bcrypt.DefaultCost)
+func (company *Company) BeforeUpdate(tx *gorm.DB) (err error) {
+	if company.Password != nil && *company.Password != "" {
+		hashed, err := bcrypt.GenerateFromPassword([]byte(*company.Password), bcrypt.DefaultCost)
 		if err != nil {
 			return err
 		}
 		pw := string(hashed)
-		c.Password = &pw
+		company.Password = &pw
 	}
-	if c.Email != "" {
-		c.Email = lower(c.Email)
+	if company.Email != "" {
+		company.Email = lower(company.Email)
 	}
 	return nil
 }

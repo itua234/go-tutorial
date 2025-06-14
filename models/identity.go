@@ -2,6 +2,9 @@ package models
 
 import (
 	"time"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type IdentityType string
@@ -43,6 +46,14 @@ type Identity struct {
 
 func (Identity) TableName() string {
 	return "identities"
+}
+
+func (identity *Identity) BeforeCreate(tx *gorm.DB) (err error) {
+	if identity.ID == "" {
+		identity.ID = uuid.New().String()
+	}
+
+	return nil
 }
 
 func (identity *Identity) GetDecryptedValue() string {
