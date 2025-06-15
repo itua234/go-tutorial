@@ -1,6 +1,8 @@
 package models
 
 import (
+	client "blog/util"
+	"context"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
@@ -87,10 +89,26 @@ func (app *App) AfterCreate(tx *gorm.DB) (err error) {
 	liveSecret := app.LiveSecretKey()
 	fmt.Println("Test Secret:", testSecret)
 	fmt.Println("Live Secret:", liveSecret)
-	// Pseudo-code: replace with your actual client logic
-	//err = client.Set(fmt.Sprintf("secret:%s", testSecret), a.ID)
-	// if err != nil { return err }
-	// err = client.Set(fmt.Sprintf("secret:%s", liveSecret), a.ID)
-	// if err != nil { return err }
+	ctx := context.Background()
+	err = client.RedisClient.Set(
+		ctx,
+		fmt.Sprintf("secret:%s", testSecret),
+		app.ID,
+		0, // 0 means no expiration
+	).Err()
+	if err != nil {
+		return err
+	}
+
+	err = client.RedisClient.Set(
+		ctx,
+		fmt.Sprintf("secret:%s", liveSecret),
+		app.ID,
+		0,
+	).Err()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
