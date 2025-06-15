@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"blog/config"
+	database "blog/config"
 
+	auth "blog/middleware"
 	client "blog/util"
 
 	"github.com/gin-gonic/gin"
@@ -28,7 +29,9 @@ func main() {
 	godotenv.Load()
 	client.InitRedisClient() // Initialize Redis
 	router := gin.Default()
-	config.ConnectDatabase()
+	database.ConnectDatabase()
+	// Pass your GORM db instance to the middleware
+	router.Use(auth.AuthenticateAppBySecretKey())
 	//router.SetTrustedProxies([]string{"192.168.1.2"})
 
 	router.GET("/ping", func(c *gin.Context) {
