@@ -7,15 +7,13 @@ import (
 	"strings"
 	"time"
 
-	database "blog/config"
 	"blog/models"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-var db = database.DB
-
-func AuthenticateAppBySecretKey() gin.HandlerFunc {
+func AuthenticateAppBySecretKey(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		startTime := time.Now()
 		rawToken := c.GetHeader("x-allow-key")

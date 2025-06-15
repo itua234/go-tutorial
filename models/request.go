@@ -28,13 +28,13 @@ const (
 
 type Request struct {
 	ID                    string        `gorm:"type:char(36);primaryKey;unique" json:"id"`
-	Reference             string        `gorm:"type:varchar(255);not null;unique" json:"reference"`
-	RedirectURL           string        `gorm:"type:varchar(255);not null" json:"redirect_url"`
+	Reference             string        `gorm:"type:varchar(191);not null;unique" json:"reference"`
+	RedirectURL           string        `gorm:"type:varchar(191);not null" json:"redirect_url"`
 	KYCLevel              KYCLevel      `gorm:"type:enum('tier_1','tier_2','tier_3');default:'tier_1'" json:"kyc_level"`
 	BankAccountsRequested bool          `gorm:"default:false" json:"bank_accounts_requested"`
 	EncryptedData         *string       `gorm:"type:text" json:"encrypted_data"`
-	AllowURL              *string       `gorm:"type:varchar(255)" json:"allow_url"`
-	KYCToken              string        `gorm:"type:varchar(255)" json:"kyc_token"`
+	AllowURL              *string       `gorm:"type:varchar(191)" json:"allow_url"`
+	KYCToken              string        `gorm:"type:varchar(191)" json:"kyc_token"`
 	TokenExpiresAt        time.Time     `gorm:"not null" json:"token_expires_at"`
 	CompanyID             string        `gorm:"type:char(36);not null" json:"company_id"`
 	Company               *Company      `gorm:"foreignKey:CompanyID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"company"`

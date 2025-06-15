@@ -30,7 +30,7 @@ const (
 
 type Customer struct {
 	ID                      string     `gorm:"type:char(36);primaryKey" json:"id"`
-	Token                   string     `gorm:"type:varchar(255);unique;not null" json:"token"`
+	Token                   string     `gorm:"type:varchar(191);unique;not null" json:"token"`
 	Phone                   *string    `gorm:"type:text" json:"phone"`
 	PhoneVerifiedAt         *time.Time `json:"phone_verified_at"`
 	EncryptedPII            *string    `gorm:"type:text" json:"encrypted_pii"`
@@ -39,9 +39,9 @@ type Customer struct {
 	VerifiedAt              *time.Time `json:"verified_at"`
 	IsBlacklisted           bool       `gorm:"default:false" json:"is_blacklisted"`
 	Email                   string     `gorm:"type:text;not null" json:"email"`
-	EmailHash               string     `gorm:"type:text;unique;not null" json:"email_hash"`
+	EmailHash               string     `gorm:"type:varchar(191);unique;not null" json:"email_hash"`
 	DOB                     *time.Time `json:"dob"`
-	Address                 *string    `gorm:"type:varchar(255)" json:"address"`
+	Address                 *string    `gorm:"type:varchar(191)" json:"address"`
 	AccessType              AccessType `gorm:"type:enum('temporary','permanent');default:'permanent'" json:"access_type"`
 	FacialRecognitionPassed bool       `gorm:"default:false" json:"facial_recognition_passed"`
 	CreatedAt               time.Time  `gorm:"autoCreateTime" json:"created_at"`

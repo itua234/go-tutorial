@@ -20,7 +20,7 @@ func ConnectDatabase() {
 	}
 
 	//Build dsn from env
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		os.Getenv("DB_USERNAME"),
 		os.Getenv("DB_PASSWORD"),
 		os.Getenv("DB_HOST"),
@@ -33,8 +33,11 @@ func ConnectDatabase() {
 	}
 
 	db.AutoMigrate(
+		&models.Request{},
 		&models.Company{},
-	// &models.Post{}
+		&models.App{},
+		&models.Customer{},
+		&models.Identity{},
 	)
 	DB = db
 	fmt.Println("Database connected.")

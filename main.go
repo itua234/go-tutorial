@@ -30,8 +30,14 @@ func main() {
 	client.InitRedisClient() // Initialize Redis
 	router := gin.Default()
 	database.ConnectDatabase()
+	// if err := company_with_app_seeder.Seed(
+	// 	database.DB,
+	// 	client.RedisClient,
+	// ); err != nil {
+	// 	log.Fatal(err)
+	// }
 	// Pass your GORM db instance to the middleware
-	router.Use(auth.AuthenticateAppBySecretKey())
+	router.Use(auth.AuthenticateAppBySecretKey(database.DB))
 	//router.SetTrustedProxies([]string{"192.168.1.2"})
 
 	router.GET("/ping", func(c *gin.Context) {
