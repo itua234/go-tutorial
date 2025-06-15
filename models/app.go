@@ -44,26 +44,22 @@ type App struct {
 	UpdatedAt     time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
-// TableName sets the table name for App
 func (App) TableName() string {
 	return "apps"
 }
 
-// Virtual field for TestSecretKey
 func (app *App) TestSecretKey() string {
 	h := hmac.New(sha256.New, []byte(SecretSalt))
 	h.Write([]byte(app.TestPublicKey))
 	return "sk_test_" + hex.EncodeToString(h.Sum(nil))
 }
 
-// Virtual field for LiveSecretKey
 func (app *App) LiveSecretKey() string {
 	h := hmac.New(sha256.New, []byte(SecretSalt))
 	h.Write([]byte(app.LivePublicKey))
 	return "sk_live_" + hex.EncodeToString(h.Sum(nil))
 }
 
-// BeforeCreate GORM hook to set UUID and generate public keys
 func (app *App) BeforeCreate(tx *gorm.DB) (err error) {
 	if app.ID == "" {
 		app.ID = uuid.New().String()
