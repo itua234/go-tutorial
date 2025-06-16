@@ -1,55 +1,20 @@
-package main
+2. When you need to send a webhook:
+Insert a row into webhook_events with status pending and attempts = 0.
+3. Send the webhook (in a goroutine, background worker, or scheduled job):
+Try to POST the payload to the target URL.
+If it succeeds, update status to success.
+If it fails, increment attempts, update last_attempt_at, and set status to failed or keep as pending for retry.
+4. Retry logic:
+Periodically (e.g., with a cron job or background worker), query for webhooks with status pending or failed and attempts < max_attempts.
+Retry sending them.
+Optionally, implement exponential backoff or delay between retries.
+5. Monitor and alert:
+You can monitor the table for webhooks stuck in failed status and alert if needed.
 
-import (
-	"fmt"
-	"os"
-	"time"
+In summary:
 
-	"github.com/counterapi/api/pkg"
-
-	"github.com/chenyahui/gin-cache/persist"
-	"github.com/go-redis/redis/v8"
-)
-
-// RedisCache is a config struct for redis cache.
-type RedisCache struct {
-	Store            *persist.RedisStore
-	DefaultCacheTime time.Duration
-}
-
-// SetupRedisCache sets the redis up.
-func SetupRedisCache() *RedisCache {
-	return &RedisCache{
-		Store: persist.NewRedisStore(redis.NewClient(&redis.Options{
-			Network: "tcp",
-			Addr: fmt.Sprintf(
-				"%s:%s",
-				os.Getenv("REDIS_HOST"),
-				os.Getenv("REDIS_PORT"),
-			),
-		})),
-		DefaultCacheTime: 10 * time.Second,
-	}
-}
-5. Let’s use the config to cache the response#
-Use the RedisCache struct to cache the response of /ping endpoint. This will cache the response for 10 seconds.
-
-package main
-
-import "github.com/gin-gonic/gin"
-
-func main() {
-	r := gin.Default()
-	cacheConfig := SetupRedisCache()
-
-	r.GET(
-		"/ping",
-		cache.CacheByRequestURI(cacheConfig.Store, cacheConfig.DefaultCacheTime),
-		func(c *gin.Context) {
-			c.JSON(200, gin.H{
-				"message": "pong",
-			})
-		})
-
-	r.Run() // listen and serve on 0.0.0.0:8080
-}
+Yes, use a DB table to track webhooks.
+Insert a row for each attempt.
+Retry failed ones with a background worker.
+Update status and attempts on each try.
+This is the industry standard for reliable webhook delivery and retry!

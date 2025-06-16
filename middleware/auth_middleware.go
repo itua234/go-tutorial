@@ -1,13 +1,13 @@
-package auth
+package middleware
 
 import (
-	client "blog/util"
+	client "confam-api/utils"
 	"log"
 	"net/http"
 	"strings"
 	"time"
 
-	"blog/models"
+	"confam-api/models"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"

@@ -2,7 +2,7 @@ package routes
 
 import "github.com/gin-gonic/gin"
 
-//"blog/controllers"
+//"confam-api/controllers"
 //"github.com/gin-gonic/gin"
 
 func RegisterRoutes(router *gin.Engine) {

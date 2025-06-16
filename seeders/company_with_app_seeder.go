@@ -1,4 +1,4 @@
-package company_with_app_seeder
+package seeders
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
-	"blog/models"
+	"confam-api/models"
 )
 
 func Seed(db *gorm.DB, redisClient *redis.Client) error {

@@ -1,7 +1,7 @@
 package models
 
 import (
-	client "blog/util"
+	client "confam-api/utils"
 	"context"
 	"crypto/hmac"
 	"crypto/rand"

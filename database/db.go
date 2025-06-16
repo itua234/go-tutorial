@@ -1,7 +1,7 @@
 package database
 
 import (
-	"blog/models"
+	"confam-api/models"
 	"fmt"
 	"log"
 	"os"

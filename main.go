@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"net/http"
 
-	database "blog/config"
+	"confam-api/database"
 
-	auth "blog/middleware"
-	client "blog/util"
+	"confam-api/middleware"
+	client "confam-api/utils"
+
+	"confam-api/controllers"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -22,6 +24,9 @@ func main() {
 	var firstname, lastname string = "itua", "osemeilu"
 	var age int = 18
 	length := 20
+	var arr1 = [3]int{1, 2, 3}
+	//arr2 := [5]int{4,5,6,7,8}
+	fmt.Println(arr1)
 	fmt.Println(firstname + lastname)
 	fmt.Println("Length is:", length)
 	fmt.Println(age)
@@ -30,16 +35,17 @@ func main() {
 	client.InitRedisClient() // Initialize Redis
 	router := gin.Default()
 	database.ConnectDatabase()
-	// if err := company_with_app_seeder.Seed(
+	// if err := seeders.Seed(
 	// 	database.DB,
 	// 	client.RedisClient,
 	// ); err != nil {
 	// 	log.Fatal(err)
 	// }
 	// Pass your GORM db instance to the middleware
-	router.Use(auth.AuthenticateAppBySecretKey(database.DB))
+	router.Use(middleware.AuthenticateAppBySecretKey(database.DB))
 	//router.SetTrustedProxies([]string{"192.168.1.2"})
 
+	router.POST("/api/v1/allow", controllers.InitiateKyc)
 	router.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "pong",

@@ -30,7 +30,7 @@ type Request struct {
 	ID                    string        `gorm:"type:char(36);primaryKey;unique" json:"id"`
 	Reference             string        `gorm:"type:varchar(191);not null;unique" json:"reference"`
 	RedirectURL           string        `gorm:"type:varchar(191);not null" json:"redirect_url"`
-	KYCLevel              KYCLevel      `gorm:"type:enum('tier_1','tier_2','tier_3');default:'tier_1'" json:"kyc_level"`
+	KYCLevel              string        `gorm:"type:enum('tier_1','tier_2','tier_3');default:'tier_1'" json:"kyc_level"`
 	BankAccountsRequested bool          `gorm:"default:false" json:"bank_accounts_requested"`
 	EncryptedData         *string       `gorm:"type:text" json:"encrypted_data"`
 	AllowURL              *string       `gorm:"type:varchar(191)" json:"allow_url"`
