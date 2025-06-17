@@ -25,14 +25,11 @@ func GenerateToken() string {
 	return hex.EncodeToString(b)
 }
 
-func HashFunction(value string) *string {
-	if value == "" {
-		return nil
-	}
+func HashFunction(value string) string {
 	normalized := strings.TrimSpace(strings.ToLower(value))
 	hash := sha256.Sum256([]byte(normalized))
 	hexStr := hex.EncodeToString(hash[:])
-	return &hexStr
+	return hexStr
 }
 
 func Encrypt(plaintext string) string {

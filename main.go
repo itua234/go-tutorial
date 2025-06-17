@@ -83,7 +83,6 @@ func main() {
 	router.POST("/hello", func(c *gin.Context) {
 		//name := c.PostForm("name") // for form data
 		// name := c.Query("name") // for query string
-		//body, _ := c.GetRawData() //no recommended for complex data
 		var json Login
 		if err := c.ShouldBindJSON(&json); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
