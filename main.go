@@ -6,10 +6,12 @@ import (
 
 	"confam-api/database"
 
-	"confam-api/middleware"
+	"confam-api/middlewares"
 	client "confam-api/utils"
 
 	"confam-api/controllers"
+	"log"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -42,11 +44,30 @@ func main() {
 	// 	log.Fatal(err)
 	// }
 	// Pass your GORM db instance to the middleware
-	router.Use(middleware.AuthenticateAppBySecretKey(database.DB))
+	router.Use(middlewares.AuthenticateAppBySecretKey(database.DB))
 	//router.SetTrustedProxies([]string{"192.168.1.2"})
 
 	router.POST("/api/v1/allow", controllers.InitiateKyc)
 	router.GET("/ping", func(c *gin.Context) {
+		day := 4
+		switch day {
+		case 1:
+			fmt.Println("monday")
+		case 2:
+			fmt.Println("tuesday")
+		default:
+			fmt.Println("Not a weekday")
+		}
+		for i := 1; i < 5; i++ {
+			fmt.Println(i)
+		}
+		fruits := [3]string{"apple", "orange", "banana"}
+		for _, value := range fruits {
+			fmt.Println(value)
+		}
+		for id, _ := range fruits {
+			fmt.Println(id)
+		}
 		c.JSON(http.StatusOK, gin.H{
 			"message": "pong",
 		})
@@ -70,5 +91,13 @@ func main() {
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "Hello " + json.Password})
 	})
-	router.Run(":8000") //listen and serve on 0.0.0.0:8000
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8000"
+	}
+	log.Printf("Server starting on port :%s", port)
+	if err := router.Run(":" + port); err != nil {
+		log.Fatalf("Server failed to start: %v", err)
+	}
 }

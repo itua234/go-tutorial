@@ -14,7 +14,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+
 	// import your encryption and token helpers
+	"slices"
 )
 
 type Identity struct {
@@ -41,9 +43,17 @@ func InitiateKyc(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid request body", "error": true})
 		return
 	}
+
 	if input.Reference == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid reference, please retry with a unique reference", "error": true})
 		return
+	} else {
+		var count int64
+		_ = database.DB.Model(&models.Request{}).Where("reference = ?", input.Reference).Count(&count).Error
+		if count > 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "please provide a unique reference", "error": true})
+			return
+		}
 	}
 	cust := input.Customer
 	if cust.Name == "" || cust.Email == "" || cust.Address == "" || cust.Identity.Type == "" || cust.Identity.Number == "" || input.RedirectURL == "" || input.KYCLevel == "" {
@@ -52,13 +62,7 @@ func InitiateKyc(c *gin.Context) {
 	}
 
 	validIdentityTypes := []string{"BVN", "NIN"}
-	found := false
-	for _, t := range validIdentityTypes {
-		if strings.ToUpper(cust.Identity.Type) == t {
-			found = true
-			break
-		}
-	}
+	found := slices.Contains(validIdentityTypes, strings.ToUpper(cust.Identity.Type))
 	if !found {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Invalid identity type: " + cust.Identity.Type + ". Must be one of BVN, NIN.",
