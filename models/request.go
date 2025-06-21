@@ -37,7 +37,7 @@ type Request struct {
 	KYCToken              string        `gorm:"type:varchar(191)" json:"kyc_token"`
 	TokenExpiresAt        time.Time     `gorm:"not null" json:"token_expires_at"`
 	CompanyID             string        `gorm:"type:char(36);not null" json:"company_id"`
-	Company               *Company      `gorm:"foreignKey:CompanyID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"company"`
+	Company               *Company      `gorm:"foreignKey:CompanyID" json:"company"`
 	Status                RequestStatus `gorm:"type:enum('initiated','otp_pending','kyc_processing','completed','failed');default:'initiated'" json:"status"`
 	CreatedAt             time.Time     `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt             time.Time     `gorm:"autoUpdateTime" json:"updated_at"`

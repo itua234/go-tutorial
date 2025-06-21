@@ -3,13 +3,11 @@ package models
 import (
 	"time"
 
+	"confam-api/utils"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
-
-func Decrypt(value string) string {
-	return value
-}
 
 type Status string
 type AccessType string
@@ -75,21 +73,22 @@ func (customer *Customer) BeforeUpdate(tx *gorm.DB) (err error) {
 
 func (customer *Customer) AfterFind(tx *gorm.DB) (err error) {
 	if customer.Phone != nil {
-		dec := Decrypt(*customer.Phone)
+		dec, _ := utils.Decrypt(*customer.Phone)
 		customer.Phone = &dec
 	}
-	customer.Email = Decrypt(customer.Email)
+	dec, _ := utils.Decrypt(customer.Email)
+	customer.Email = dec
 	return nil
 }
 
-func (c *Customer) GetDecryptedPhone() *string {
-	if c.Phone != nil {
-		dec := Decrypt(*c.Phone)
-		return &dec
-	}
-	return nil
-}
+// func (c *Customer) GetDecryptedPhone() *string {
+// 	if c.Phone != nil {
+// 		dec := Decrypt(*c.Phone)
+// 		return &dec
+// 	}
+// 	return nil
+// }
 
-func (c *Customer) GetDecryptedEmail() string {
-	return Decrypt(c.Email)
-}
+// func (c *Customer) GetDecryptedEmail() string {
+// 	return Decrypt(c.Email)
+// }

@@ -41,7 +41,7 @@ type App struct {
 	Status        string    `gorm:"type:enum('ACTIVE','INACTIVE');default:ACTIVE" json:"status"`
 	WebhookURL    *string   `gorm:"type:varchar(255)" json:"webhook_url"`
 	CompanyID     string    `gorm:"type:char(36);not null" json:"company_id"`
-	Company       *Company  `gorm:"foreignKey:CompanyID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"company"`
+	Company       *Company  `gorm:"foreignKey:CompanyID" json:"company"`
 	CreatedAt     time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt     time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }

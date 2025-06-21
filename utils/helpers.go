@@ -2,6 +2,7 @@ package utils
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 
 	"crypto/sha256"
@@ -10,6 +11,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 )
@@ -41,17 +43,15 @@ func Encrypt(plaintext string) string {
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		panic(err)
+		return ""
 	}
 	aesgcm, err := cipher.NewGCM(block)
 	if err != nil {
-		panic(err)
+		return ""
 	}
 
 	iv := make([]byte, aesgcm.NonceSize())
-	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		panic(err)
-	}
+	io.ReadFull(rand.Reader, iv)
 
 	ciphertext := aesgcm.Seal(nil, iv, []byte(plaintext), nil)
 	return hex.EncodeToString(iv) + ":" + hex.EncodeToString(ciphertext)
@@ -92,4 +92,10 @@ func Decrypt(encrypted string) (string, error) {
 		return "", err
 	}
 	return string(plaintext), nil
+}
+
+func generateApikey(prefix string) string {
+	b := make([]byte, 32)
+	rand.Read(b)
+	return fmt.Sprintf("%s_%s", prefix, base64.URLEncoding.EncodeToString(b))
 }

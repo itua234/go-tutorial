@@ -72,6 +72,58 @@ func AuthenticateAppBySecretKey(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
+func AuthAppBySecretKey(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		startTime := time.Now()
+		requestMethod := c.Request.Method
+		requestUrl := c.Request.RequestURI
+		clientIp := c.ClientIP()
+		log.Printf("Request received: %s %s from %s", requestMethod, requestUrl, clientIp)
+
+		rawToken := c.GetHeader("x-api-key")
+		token := ""
+		if rawToken != "" {
+			// If multiple headers, use the first
+			if strings.Contains(rawToken, ",") {
+				tokens := strings.Split(rawToken, ",")
+				token = strings.TrimSpace(tokens[0])
+				log.Printf("Multiple API keys found in 'x-api-key' header, using the first one.")
+			} else {
+				token = rawToken
+			}
+		}
+		if token == "" {
+			log.Printf("Authentication failed: Missing API key.")
+			c.JSON(http.StatusUnauthorized, gin.H{"error": true, "message": "Authentication failed: Missing API key."})
+			c.Abort()
+			return
+		}
+		log.Printf("Attempting authentication with key: %s... (masked)", maskToken(token))
+
+		var apiKey models.APIKey
+		var app *models.App
+		if err := db.Preload("App.Company").First(&apiKey, "key = ?", token).Error; err != nil {
+			log.Printf("Authentication failed: Invalid API key - %s...", maskToken(token))
+			c.JSON(http.StatusUnauthorized, gin.H{"error": true, "message": "Invalid API key"})
+			c.Abort()
+			return
+		} else {
+			app = apiKey.App
+		}
+
+		// Store app in context for downstream handlers
+		c.Set("app", app)
+
+		responseTime := time.Since(startTime).Milliseconds()
+		companyName := ""
+		if app.Company != nil {
+			companyName = app.Company.Name
+		}
+		log.Printf("Authentication successful for App ID: %s (Company: %s). Request processed in %dms.", app.ID, companyName, responseTime)
+		c.Next()
+	}
+}
+
 // Helper to mask token for logging
 func maskToken(token string) string {
 	if len(token) > 6 {
