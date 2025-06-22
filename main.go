@@ -23,15 +23,11 @@ type Login struct {
 }
 
 func main() {
-	var firstname, lastname string = "itua", "osemeilu"
-	var age int = 18
-	length := 20
-	var arr1 = [3]int{1, 2, 3}
-	//arr2 := [5]int{4,5,6,7,8}
-	fmt.Println(arr1)
-	fmt.Println(firstname + lastname)
-	fmt.Println("Length is:", length)
-	fmt.Println(age)
+	var x int = 10
+	var y byte = 100
+	var sum3 int = int(y) + x
+	var sum4 byte = byte(x) + y
+	fmt.Println(sum3, sum4)
 
 	godotenv.Load()
 	client.InitRedisClient() // Initialize Redis
@@ -44,10 +40,15 @@ func main() {
 	// 	log.Fatal(err)
 	// }
 	// Pass your GORM db instance to the middleware
-	router.Use(middlewares.AuthenticateAppBySecretKey(database.DB))
+	//router.Use(middlewares.AuthenticateAppBySecretKey(database.DB))
 	//router.SetTrustedProxies([]string{"192.168.1.2"})
 
-	router.POST("/api/v1/allow", controllers.InitiateKyc)
+	router.POST(
+		"/api/v1/allow",
+		middlewares.AuthenticateAppBySecretKey(database.DB),
+		controllers.InitiateKyc,
+	)
+	router.GET("/api/v1/allow/:kyc_token", controllers.FetchKycRequest)
 	router.GET("/ping", func(c *gin.Context) {
 		day := 4
 		switch day {
@@ -72,14 +73,7 @@ func main() {
 			"message": "pong",
 		})
 	})
-	router.GET("/redis-ping", func(c *gin.Context) {
-		pong, err := client.RedisClient.Ping(c).Result()
-		if err != nil {
-			c.JSON(500, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(200, gin.H{"message": pong})
-	})
+
 	router.POST("/hello", func(c *gin.Context) {
 		//name := c.PostForm("name") // for form data
 		// name := c.Query("name") // for query string
@@ -93,7 +87,7 @@ func main() {
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8000"
+		port = "8080"
 	}
 	log.Printf("Server starting on port :%s", port)
 	if err := router.Run(":" + port); err != nil {

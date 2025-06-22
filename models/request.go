@@ -1,8 +1,11 @@
 package models
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
+
+	"confam-api/utils"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -57,5 +60,23 @@ func (request *Request) BeforeCreate(tx *gorm.DB) (err error) {
 		request.AllowURL = &generatedURL
 	}
 
+	return nil
+}
+
+func (r *Request) AfterFind(tx *gorm.DB) (err error) {
+	if r.EncryptedData != nil && *r.EncryptedData != "" {
+		decrypted, err := utils.Decrypt(*r.EncryptedData) // You implement this function
+		if err != nil {
+			return err
+		}
+		r.EncryptedData = &decrypted
+
+		var parsed map[string]interface{}
+		err = json.Unmarshal([]byte(decrypted), &parsed)
+		if err != nil {
+			return err
+		}
+		//r.EncryptedData = parsed
+	}
 	return nil
 }

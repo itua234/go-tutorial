@@ -138,6 +138,32 @@ func InitiateKyc(c *gin.Context) {
 	})
 }
 
+func FetchKycRequest(c *gin.Context) {
+	kyc_token := c.Param("kyc_token")
+	if kyc_token == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   true,
+			"message": "Missing KYC token",
+		})
+		return
+	}
+
+	var request models.Request
+	result := database.DB.Where("kyc_token = ?", kyc_token).First(&request)
+	if result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":   true,
+			"message": "KYC request not found",
+		})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"message": "Fetched KYC request",
+		"results": request,
+	})
+}
+
 func findOrCreateCustomer(input CustomerInput) (*models.Customer, error) {
 	// ...lookup or create customer...
 	var customer models.Customer

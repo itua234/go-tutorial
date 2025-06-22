@@ -61,11 +61,7 @@ func AuthenticateAppBySecretKey(db *gorm.DB) gin.HandlerFunc {
 		c.Set("app", app)
 
 		responseTime := time.Since(startTime).Milliseconds()
-		companyName := "N/A"
-		if app.Company != nil {
-			companyName = app.Company.Name
-		}
-		log.Printf("Authentication successful for App ID: %s (Company: %s). Request processed in %dms.", appId, companyName, responseTime)
+		log.Printf("Authentication successful for App ID: %s (Company: %s). Request processed in %dms.", appId, app.Company.Name, responseTime)
 		c.Next()
 	}
 }
@@ -113,11 +109,7 @@ func AuthAppBySecretKey(db *gorm.DB) gin.HandlerFunc {
 		c.Set("app", app)
 
 		responseTime := time.Since(startTime).Milliseconds()
-		companyName := ""
-		if app.Company != nil {
-			companyName = app.Company.Name
-		}
-		log.Printf("Authentication successful for App ID: %s (Company: %s). Request processed in %dms.", app.ID, companyName, responseTime)
+		log.Printf("Authentication successful for App ID: %s (Company: %s). Request processed in %dms.", app.ID, app.Company.Name, responseTime)
 		c.Next()
 	}
 }
