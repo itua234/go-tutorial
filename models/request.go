@@ -1,7 +1,6 @@
 package models
 
 import (
-	"encoding/json"
 	"strings"
 	"time"
 
@@ -63,6 +62,18 @@ func (request *Request) BeforeCreate(tx *gorm.DB) (err error) {
 	return nil
 }
 
+// func (r *Request) AfterFind(tx *gorm.DB) (err error) {
+// 	if len(r.EncryptedData) > 0 {
+// 		decrypted, err := utils.Decrypt(string(r.EncryptedData))
+// 		if err != nil {
+// 			return err
+// 		}
+// 		// Here, assign the decrypted JSON to EncryptedData as RawMessage.
+// 		r.EncryptedData = json.RawMessage(decrypted)
+// 	}
+// 	return nil
+// }
+
 func (r *Request) AfterFind(tx *gorm.DB) (err error) {
 	if r.EncryptedData != nil && *r.EncryptedData != "" {
 		decrypted, err := utils.Decrypt(*r.EncryptedData) // You implement this function
@@ -71,11 +82,11 @@ func (r *Request) AfterFind(tx *gorm.DB) (err error) {
 		}
 		r.EncryptedData = &decrypted
 
-		var parsed map[string]interface{}
-		err = json.Unmarshal([]byte(decrypted), &parsed)
-		if err != nil {
-			return err
-		}
+		// var parsed map[string]interface{}
+		// err = json.Unmarshal([]byte(decrypted), &parsed)
+		// if err != nil {
+		// 	return err
+		// }
 		//r.EncryptedData = parsed
 	}
 	return nil

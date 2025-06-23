@@ -156,11 +156,38 @@ func FetchKycRequest(c *gin.Context) {
 			"message": "KYC request not found",
 		})
 		return
+	} else if request.Status == "completed" {
+		log.Printf("KYC request already completed: %s", kyc_token)
+		c.JSON(http.StatusForbidden, gin.H{
+			"error":   true,
+			"message": "KYC request already completed.",
+		})
+		return
+	} else if request.Status == "failed" {
+		log.Printf("KYC request failed: %s", kyc_token)
+		c.JSON(http.StatusForbidden, gin.H{
+			"error":   true,
+			"message": "KYC request failed. Please try again.",
+		})
+		return
 	}
 
-	c.JSON(200, gin.H{
-		"message": "Fetched KYC request",
-		"results": request,
+	var decrypted map[string]interface{}
+	json.Unmarshal([]byte(*request.EncryptedData), &decrypted)
+	var customer models.Customer
+	database.DB.Preload("Identities").
+		Where("email_hash = ?", utils.HashFunction(decrypted["email"].(string))).
+		First(&customer)
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "KYC request fetched successfully",
+		"results": gin.H{
+			"redirect_url":            request.RedirectURL,
+			"kyc_level":               request.KYCLevel,
+			"bank_accounts_requested": request.BankAccountsRequested,
+			"customer":                customer,
+		},
+		"error": false,
 	})
 }
 
@@ -191,6 +218,14 @@ func findOrCreateCustomer(input CustomerInput) (*models.Customer, error) {
 	if err := database.DB.Create(&customer).Error; err != nil {
 		return nil, err
 	}
+
+	identity := models.Identity{
+		CustomerID: customer.ID,
+		Type:       models.IdentityType(input.Identity.Type),
+		Value:      utils.Encrypt(input.Identity.Number),
+	}
+	database.DB.Create(&identity)
+
 	return &customer, nil
 }
 

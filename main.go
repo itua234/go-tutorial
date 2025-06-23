@@ -23,11 +23,23 @@ type Login struct {
 }
 
 func main() {
-	var x int = 10
-	var y byte = 100
-	var sum3 int = int(y) + x
-	var sum4 byte = byte(x) + y
-	fmt.Println(sum3, sum4)
+	// var x int = 10
+	// var y byte = 100
+	// var sum3 int = int(y) + x
+	// var sum4 byte = byte(x) + y
+	// var x = []int{1, 2, 3}
+	// var y = []int{10, 20, 30}
+	// x = append(x, y...)
+	// fmt.Println(x)
+	x := []string{"a", "b", "c", "d"}
+	y := x[:2]
+	z := x[1:]
+	x[1] = "y"
+	y[0] = "x"
+	z[1] = "z"
+	fmt.Println("x:", x)
+	fmt.Println("y:", y)
+	fmt.Println("z:", z)
 
 	godotenv.Load()
 	client.InitRedisClient() // Initialize Redis
