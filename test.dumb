@@ -18,3 +18,8 @@ Insert a row for each attempt.
 Retry failed ones with a background worker.
 Update status and attempts on each try.
 This is the industry standard for reliable webhook delivery and retry!
+
+mkdir user-service
+cd user-service
+go mod init user-service
+go get github.com/gin-gonic/gin

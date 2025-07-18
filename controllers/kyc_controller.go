@@ -186,6 +186,7 @@ func FetchKycRequest(c *gin.Context) {
 			"kyc_level":               request.KYCLevel,
 			"bank_accounts_requested": request.BankAccountsRequested,
 			"customer":                customer,
+			"status":                  request.Status,
 		},
 		"error": false,
 	})

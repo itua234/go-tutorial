@@ -23,14 +23,6 @@ type Login struct {
 }
 
 func main() {
-	// var x int = 10
-	// var y byte = 100
-	// var sum3 int = int(y) + x
-	// var sum4 byte = byte(x) + y
-	// var x = []int{1, 2, 3}
-	// var y = []int{10, 20, 30}
-	// x = append(x, y...)
-	// fmt.Println(x)
 	x := []string{"a", "b", "c", "d"}
 	y := x[:2]
 	z := x[1:]
@@ -51,6 +43,20 @@ func main() {
 	// ); err != nil {
 	// 	log.Fatal(err)
 	// }
+	// Configure CORS middleware
+	// "github.com/gin-contrib/cors"
+	// config := cors.DefaultConfig()
+	// config.AllowOrigins = []string{"http://localhost:3000"} // Replace with your frontend origin(s)
+	// // You can also use AllowAllOrigins: true for development, but be cautious in production
+	// // config.AllowAllOrigins = true
+
+	// config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	// config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With"} // Add any custom headers your frontend sends
+	// config.ExposeHeaders = []string{"Content-Length"} // Headers that the browser can access
+	// config.AllowCredentials = true // If your frontend sends cookies or auth headers
+
+	// router.Use(cors.New(config))
+	router.Use(middlewares.CORSMiddleware())
 	// Pass your GORM db instance to the middleware
 	//router.Use(middlewares.AuthenticateAppBySecretKey(database.DB))
 	//router.SetTrustedProxies([]string{"192.168.1.2"})
@@ -61,30 +67,6 @@ func main() {
 		controllers.InitiateKyc,
 	)
 	router.GET("/api/v1/allow/:kyc_token", controllers.FetchKycRequest)
-	router.GET("/ping", func(c *gin.Context) {
-		day := 4
-		switch day {
-		case 1:
-			fmt.Println("monday")
-		case 2:
-			fmt.Println("tuesday")
-		default:
-			fmt.Println("Not a weekday")
-		}
-		for i := 1; i < 5; i++ {
-			fmt.Println(i)
-		}
-		fruits := [3]string{"apple", "orange", "banana"}
-		for _, value := range fruits {
-			fmt.Println(value)
-		}
-		for id, _ := range fruits {
-			fmt.Println(id)
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-		})
-	})
 
 	router.POST("/hello", func(c *gin.Context) {
 		//name := c.PostForm("name") // for form data
