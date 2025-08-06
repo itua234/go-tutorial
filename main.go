@@ -23,20 +23,22 @@ type Login struct {
 }
 
 func main() {
-	x := []string{"a", "b", "c", "d"}
-	y := x[:2]
-	z := x[1:]
-	x[1] = "y"
-	y[0] = "x"
-	z[1] = "z"
-	fmt.Println("x:", x)
-	fmt.Println("y:", y)
-	fmt.Println("z:", z)
-
 	godotenv.Load()
 	client.InitRedisClient() // Initialize Redis
 	router := gin.Default()
 	database.ConnectDatabase()
+
+	router.MaxMultipartMemory = 8 << 20 //8Mb
+	router.POST("/api/v1/upload", func(c *gin.Context) {
+		// form, _ := c.MultipartForm
+		// files := form.File["files"]
+		file, _ := c.FormFile("file")
+		log.Println(file.Filename)
+		c.SaveUploadedFile(file, "./files"+file.Filename)
+		c.JSON(http.StatusOK, gin.H{
+			"message": fmt.Sprintf("'%s' uploaded!", file.Filename),
+		})
+	})
 	// if err := seeders.Seed(
 	// 	database.DB,
 	// 	client.RedisClient,
