@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"confam-api/database"
+	"confam-api/routes"
 
 	"confam-api/middlewares"
 	client "confam-api/utils"
@@ -14,13 +15,27 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"github.com/joho/godotenv"
 )
 
-type Login struct {
-	User     string
-	Password string
+// User structs for validation
+type RegisterRequest struct {
+	FirstName       string `json:"first_name" binding:"required,min=2,max=50" validate:"alpha"`
+	LastName        string `json:"last_name" binding:"required,min=2,max=50" validate:"alpha"`
+	Email           string `json:"email" binding:"required,email"`
+	Password        string `json:"password" binding:"required,min=8,max=100"`
+	ConfirmPassword string `json:"confirm_password" binding:"required"`
+	Phone           string `json:"phone" binding:"omitempty" validate:"phone"`
 }
+
+type LoginRequest struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=6"`
+}
+
+// Custom validator instance
+var validate *validator.Validate
 
 func main() {
 	godotenv.Load()
@@ -63,6 +78,11 @@ func main() {
 	//router.Use(middlewares.AuthenticateAppBySecretKey(database.DB))
 	//router.SetTrustedProxies([]string{"192.168.1.2"})
 
+	// Health check endpoint
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "healthy"})
+	})
+
 	router.POST(
 		"/api/v1/allow",
 		middlewares.AuthenticateAppBySecretKey(database.DB),
@@ -70,16 +90,7 @@ func main() {
 	)
 	router.GET("/api/v1/allow/:kyc_token", controllers.FetchKycRequest)
 
-	router.POST("/hello", func(c *gin.Context) {
-		//name := c.PostForm("name") // for form data
-		// name := c.Query("name") // for query string
-		var json Login
-		if err := c.ShouldBindJSON(&json); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"message": "Hello " + json.Password})
-	})
+	routes.RegisterAuthRoutes(router)
 
 	port := os.Getenv("PORT")
 	if port == "" {
