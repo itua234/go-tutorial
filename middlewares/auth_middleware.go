@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"confam-api/models"
+	models "confam-api/models"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
