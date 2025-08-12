@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"confam-api/database"
-	"confam-api/routes"
+	database "confam-api/database"
+	routes "confam-api/routes"
 
-	"confam-api/middlewares"
+	middlewares "confam-api/middlewares"
 	client "confam-api/utils"
 
-	"confam-api/controllers"
+	controllers "confam-api/controllers"
 	"log"
 	"os"
 
