@@ -23,6 +23,14 @@ type ErrorResponse struct {
 
 // Success response structure
 type SuccessResponse struct {
+	Status  string      `json:"status"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
+}
+
+// Error response structure
+type ValidationError struct {
+	Status  string            `json:"status"`
+	Message string            `json:"message"`
+	Errors  map[string]string `json:"errors"`
 }

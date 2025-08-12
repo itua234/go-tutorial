@@ -15,32 +15,15 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"github.com/joho/godotenv"
 )
-
-// User structs for validation
-type RegisterRequest struct {
-	FirstName       string `json:"first_name" binding:"required,min=2,max=50" validate:"alpha"`
-	LastName        string `json:"last_name" binding:"required,min=2,max=50" validate:"alpha"`
-	Email           string `json:"email" binding:"required,email"`
-	Password        string `json:"password" binding:"required,min=8,max=100"`
-	ConfirmPassword string `json:"confirm_password" binding:"required"`
-	Phone           string `json:"phone" binding:"omitempty" validate:"phone"`
-}
-
-type LoginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=6"`
-}
-
-// Custom validator instance
-var validate *validator.Validate
 
 func main() {
 	godotenv.Load()
 	client.InitRedisClient() // Initialize Redis
 	router := gin.Default()
+	// Set Gin to release mode to reduce noise
+	//gin.SetMode(gin.ReleaseMode)
 	database.ConnectDatabase()
 
 	router.MaxMultipartMemory = 8 << 20 //8Mb
@@ -83,14 +66,14 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"status": "healthy"})
 	})
 
+	routes.RegisterAuthRoutes(router)
+
 	router.POST(
 		"/api/v1/allow",
 		middlewares.AuthenticateAppBySecretKey(database.DB),
 		controllers.InitiateKyc,
 	)
 	router.GET("/api/v1/allow/:kyc_token", controllers.FetchKycRequest)
-
-	routes.RegisterAuthRoutes(router)
 
 	port := os.Getenv("PORT")
 	if port == "" {

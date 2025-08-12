@@ -11,7 +11,10 @@ import (
 func Register(c *gin.Context) {
 	var req structs.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": "failed",
+			"error":  err.Error(),
+		})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -22,7 +25,11 @@ func Register(c *gin.Context) {
 func Login(c *gin.Context) {
 	var req structs.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, structs.ValidationError{
+			Status:  "failed",
+			Message: "Validation failed",
+			//Errors:  formatBindingError(err),
+		})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
