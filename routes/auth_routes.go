@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"confam-api/controllers"
+	controllers "confam-api/controllers"
 
 	"github.com/gin-gonic/gin"
 )

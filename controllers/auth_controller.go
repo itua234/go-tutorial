@@ -3,7 +3,7 @@ package controllers
 import (
 	"net/http"
 
-	"confam-api/structs"
+	structs "confam-api/structs"
 
 	"github.com/gin-gonic/gin"
 )
