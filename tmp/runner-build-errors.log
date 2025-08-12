@@ -1,0 +1,3 @@
+# confam-api
+.\main.go:61:25: undefined: middlewares.CorsHeadersLoggingMiddleware
+.\main.go:62:25: undefined: middlewares.CorsMiddleware

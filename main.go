@@ -43,20 +43,11 @@ func main() {
 	// ); err != nil {
 	// 	log.Fatal(err)
 	// }
-	// Configure CORS middleware
-	// "github.com/gin-contrib/cors"
-	// config := cors.DefaultConfig()
-	// config.AllowOrigins = []string{"http://localhost:3000"} // Replace with your frontend origin(s)
-	// // You can also use AllowAllOrigins: true for development, but be cautious in production
-	// // config.AllowAllOrigins = true
 
-	// config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
-	// config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With"} // Add any custom headers your frontend sends
-	// config.ExposeHeaders = []string{"Content-Length"} // Headers that the browser can access
-	// config.AllowCredentials = true // If your frontend sends cookies or auth headers
-
-	// router.Use(cors.New(config))
-	router.Use(middlewares.CORSMiddleware())
+	// Apply middleware
+	router.Use(middlewares.CorsMiddleware())
+	router.Use(middlewares.RequestLoggingMiddleware())
+	router.Use(middlewares.CorsHeadersLoggingMiddleware())
 	// Pass your GORM db instance to the middleware
 	//router.Use(middlewares.AuthenticateAppBySecretKey(database.DB))
 	//router.SetTrustedProxies([]string{"192.168.1.2"})
