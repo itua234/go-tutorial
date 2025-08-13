@@ -1,12 +1,12 @@
 package structs
 
 type RegisterRequest struct {
-	FirstName       string `json:"first_name" binding:"required,min=2,max=50" validate:"alpha"`
-	LastName        string `json:"last_name" binding:"required,min=2,max=50" validate:"alpha"`
+	FirstName       string `json:"firstname" binding:"required,min=2,max=50"`
+	LastName        string `json:"lastname" binding:"required,min=2,max=50"`
 	Email           string `json:"email" binding:"required,email"`
 	Password        string `json:"password" binding:"required,min=8,max=100"`
 	ConfirmPassword string `json:"confirm_password" binding:"required"`
-	Phone           string `json:"phone" binding:"omitempty" validate:"phone"`
+	Phone           string `json:"phone" binding:"omitempty"`
 }
 
 type LoginRequest struct {

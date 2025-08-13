@@ -11,6 +11,7 @@ import (
 	client "confam-api/utils"
 
 	controllers "confam-api/controllers"
+	utils "confam-api/utils"
 	"log"
 	"os"
 
@@ -20,6 +21,8 @@ import (
 
 func main() {
 	godotenv.Load()
+	// Call the setup function to register custom validators
+	utils.SetupValidator()
 	client.InitRedisClient() // Initialize Redis
 	router := gin.Default()
 	// Set Gin to release mode to reduce noise

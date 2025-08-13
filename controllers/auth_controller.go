@@ -11,6 +11,7 @@ import (
 	utils "confam-api/utils"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v5"
 	"gorm.io/gorm"
 )
@@ -18,10 +19,17 @@ import (
 func Register(c *gin.Context) {
 	var req structs.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status": "failed",
-			"error":  err.Error(),
-		})
+		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+			errors := utils.FormatValidationErrors(validationErrors)
+			// c.JSON(http.StatusBadRequest, ErrorResponse{
+			// 	Error:   "Validation Error",
+			// 	Message: "Invalid input data",
+			// 	Details: getValidationErrors(err),
+			// })
+			c.JSON(http.StatusBadRequest, gin.H{"errors": errors})
+			return
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -32,11 +40,17 @@ func Register(c *gin.Context) {
 func Login(c *gin.Context) {
 	var req structs.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, structs.ValidationError{
-			Status:  "failed",
-			Message: "Validation failed",
-			//Errors:  formatBindingError(err),
-		})
+		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+			errors := utils.FormatValidationErrors(validationErrors)
+			// c.JSON(http.StatusBadRequest, ErrorResponse{
+			// 	Error:   "Validation Error",
+			// 	Message: "Invalid input data",
+			// 	Details: getValidationErrors(err),
+			// })
+			c.JSON(http.StatusBadRequest, gin.H{"errors": errors})
+			return
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 		return
 	}
 
