@@ -14,6 +14,10 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required,min=6"`
 }
 
+type ForgotPasswordRequest struct {
+	Email string `json:"email" binding:"required,email"`
+}
+
 // Error response structure
 type ErrorResponse struct {
 	Error   string            `json:"error"`

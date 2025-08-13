@@ -51,6 +51,8 @@ func FormatValidationErrors(validationErrors validator.ValidationErrors) map[str
 		switch fieldError.Tag() {
 		case "required":
 			errors[field] = readable + " field is required."
+		case "string":
+			errors[field] = "The " + readable + " attribute must be a string."
 		case "email":
 			errors[field] = readable + " must be a valid email address."
 		case "min":
