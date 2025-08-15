@@ -1,1 +1,0 @@
-confam-api: go build confam-api: copying C:\Users\USER\AppData\Local\Temp\go-build633438047\b001\exe\a.out.exe: open tmp\runner-build.exe: The process cannot access the file because it is being used by another process.

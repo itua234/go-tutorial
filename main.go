@@ -6,18 +6,29 @@ import (
 
 	database "confam-api/database"
 	routes "confam-api/routes"
+	client "confam-api/utils"
+	utils "confam-api/utils"
 
 	middlewares "confam-api/middlewares"
-	client "confam-api/utils"
 
 	controllers "confam-api/controllers"
-	utils "confam-api/utils"
 	"log"
 	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
+
+func nonempty(strings []string) []string {
+	i := 0
+	for _, s := range strings {
+		if s != "" {
+			strings[i] = s
+			i++
+		}
+	}
+	return strings[:i]
+}
 
 func main() {
 	godotenv.Load()
@@ -31,8 +42,8 @@ func main() {
 
 	router.MaxMultipartMemory = 8 << 20 //8Mb
 	router.POST("/api/v1/upload", func(c *gin.Context) {
-		// form, _ := c.MultipartForm
-		// files := form.File["files"]
+		//form, _ := c.MultipartForm
+		//files := form.File["files"]
 		file, _ := c.FormFile("file")
 		log.Println(file.Filename)
 		c.SaveUploadedFile(file, "./files"+file.Filename)

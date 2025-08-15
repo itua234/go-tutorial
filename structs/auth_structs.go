@@ -18,6 +18,13 @@ type ForgotPasswordRequest struct {
 	Email string `json:"email" binding:"required,email"`
 }
 
+type PasswordResetRequest struct {
+	Email           string `json:"email" binding:"required,email"`
+	Token           string `json:"token" binding:"required"`
+	Password        string `json:"password" binding:"required,min=8,max=100"`
+	ConfirmPassword string `json:"confirm_password" binding:"required"`
+}
+
 // Error response structure
 type ErrorResponse struct {
 	Error   string            `json:"error"`

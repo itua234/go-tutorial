@@ -96,17 +96,30 @@ func ForgotPassword(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
 			errors := utils.FormatValidationErrors(validationErrors)
-			// c.JSON(http.StatusBadRequest, ErrorResponse{
-			// 	Error:   "Validation Error",
-			// 	Message: "Invalid input data",
-			// 	Details: getValidationErrors(err),
-			// })
 			c.JSON(http.StatusBadRequest, gin.H{"errors": errors})
 			return
 		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 		return
 	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Forgot Password Successful",
+	})
+}
+
+func PasswordReset(c *gin.Context) {
+	var req structs.PasswordResetRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+			errors := utils.FormatValidationErrors(validationErrors)
+			c.JSON(http.StatusBadRequest, gin.H{"errors": errors})
+			return
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Forgot Password Successful",
 	})
