@@ -13,6 +13,10 @@ func RegisterAuthRoutes(router *gin.Engine) {
 		{
 			auth.POST("/login", controllers.Login)
 			auth.POST("/register", controllers.Register)
+			auth.POST("/password/forgot", controllers.ForgotPassword)
+			auth.POST("/password/reset", controllers.PasswordReset)
+			auth.PUT("/password/change", controllers.ChangePassword)
+			//auth.POST("/token/refresh", controllers.RefreshToken)
 		}
 	}
 }

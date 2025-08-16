@@ -124,3 +124,20 @@ func PasswordReset(c *gin.Context) {
 		"message": "Forgot Password Successful",
 	})
 }
+
+func ChangePassword(c *gin.Context) {
+	var req structs.ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+			errors := utils.FormatValidationErrors(validationErrors)
+			c.JSON(http.StatusBadRequest, gin.H{"errors": errors})
+			return
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Change Password Successful",
+	})
+}

@@ -25,6 +25,12 @@ type PasswordResetRequest struct {
 	ConfirmPassword string `json:"confirm_password" binding:"required"`
 }
 
+type ChangePasswordRequest struct {
+	OldPassword     string `json:"old_password" binding:"required"`
+	NewPassword     string `json:"new_password" binding:"required,min=8,max=100"`
+	ConfirmPassword string `json:"confirm_password" binding:"required"`
+}
+
 // Error response structure
 type ErrorResponse struct {
 	Error   string            `json:"error"`
