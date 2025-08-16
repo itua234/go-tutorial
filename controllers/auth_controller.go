@@ -2,34 +2,35 @@ package controllers
 
 import (
 	"net/http"
-	"os"
-	"time"
 
-	database "confam-api/database"
-	models "confam-api/models"
+	services "confam-api/services"
 	structs "confam-api/structs"
+	response "confam-api/utils"
 	utils "confam-api/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	"github.com/golang-jwt/jwt/v5"
-	"gorm.io/gorm"
 )
+
+// AuthController handles HTTP requests.
+type AuthController struct {
+	AuthService services.IAuthService
+}
+
+// NewAuthController creates a new controller with a service dependency.
+func NewAuthController(authService services.IAuthService) *AuthController {
+	return &AuthController{AuthService: authService}
+}
 
 func Register(c *gin.Context) {
 	var req structs.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
 			errors := utils.FormatValidationErrors(validationErrors)
-			// c.JSON(http.StatusBadRequest, ErrorResponse{
-			// 	Error:   "Validation Error",
-			// 	Message: "Invalid input data",
-			// 	Details: getValidationErrors(err),
-			// })
-			c.JSON(http.StatusBadRequest, gin.H{"errors": errors})
+			response.ValidationErrorResponse(c, errors)
 			return
 		}
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
+		response.ErrorResponse(c, http.StatusBadRequest, "Bad Request", nil)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -37,58 +38,26 @@ func Register(c *gin.Context) {
 	})
 }
 
-func Login(c *gin.Context) {
+func (ac *AuthController) Login(c *gin.Context) {
 	var req structs.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
 			errors := utils.FormatValidationErrors(validationErrors)
-			// c.JSON(http.StatusBadRequest, ErrorResponse{
-			// 	Error:   "Validation Error",
-			// 	Message: "Invalid input data",
-			// 	Details: getValidationErrors(err),
-			// })
-			c.JSON(http.StatusBadRequest, gin.H{"errors": errors})
+			response.ValidationErrorResponse(c, errors)
 			return
 		}
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
+		response.ErrorResponse(c, http.StatusBadRequest, "Bad Request", nil)
 		return
 	}
 
-	// Find the company by email
-	var company models.Company
-	result := database.DB.Where("email = ?", req.Email).First(&company)
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials."})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error."})
-		return
-	}
-
-	// Compare the password with the stored hash
-	if err := utils.ComparePasswordAndHash(req.Password, *company.Password); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials."})
-		return
-	}
-
-	// Generate a JWT
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": company.ID,
-		"exp": time.Now().Add(time.Hour * 24).Unix(), // Token expires in 24 hours
-	})
-
-	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	// Pass the request data to the service and receive the token.
+	token, err := ac.AuthService.Login(c, req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create token."})
+		response.ErrorResponse(c, http.StatusUnauthorized, err.Error(), nil)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"status":  "success",
-		"message": "Login Successful",
-		"data":    tokenString,
-	})
+	response.SuccessResponse(c, http.StatusOK, "Login Successful", gin.H{"token": token})
 }
 
 func ForgotPassword(c *gin.Context) {
@@ -96,12 +65,17 @@ func ForgotPassword(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
 			errors := utils.FormatValidationErrors(validationErrors)
-			c.JSON(http.StatusBadRequest, gin.H{"errors": errors})
+			response.ValidationErrorResponse(c, errors)
 			return
 		}
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
+		response.ErrorResponse(c, http.StatusBadRequest, "Bad Request", nil)
 		return
 	}
+
+	// if err := ac.AuthService.ForgotPassword(c, req); err != nil {
+	// 	response.ErrorResponse(c, http.StatusInternalServerError, err.Error(), nil)
+	// 	return
+	// }
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Forgot Password Successful",
@@ -113,10 +87,10 @@ func PasswordReset(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
 			errors := utils.FormatValidationErrors(validationErrors)
-			c.JSON(http.StatusBadRequest, gin.H{"errors": errors})
+			response.ValidationErrorResponse(c, errors)
 			return
 		}
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
+		response.ErrorResponse(c, http.StatusBadRequest, "Bad Request", nil)
 		return
 	}
 
@@ -130,10 +104,10 @@ func ChangePassword(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
 			errors := utils.FormatValidationErrors(validationErrors)
-			c.JSON(http.StatusBadRequest, gin.H{"errors": errors})
+			response.ValidationErrorResponse(c, errors)
 			return
 		}
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
+		response.ErrorResponse(c, http.StatusBadRequest, "Bad Request", nil)
 		return
 	}
 

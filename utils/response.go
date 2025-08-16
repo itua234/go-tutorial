@@ -1,23 +1,35 @@
-// pkg/utils/response.go
 package utils
 
-import "github.com/gin-gonic/gin"
+import (
+	structs "confam-api/structs"
+	"net/http"
 
-type APIResponse struct {
-	Message string      `json:"message"`
-	Results interface{} `json:"results,omitempty"`
-	Error   bool        `json:"error"`
-}
+	"github.com/gin-gonic/gin"
+)
 
-// RespondWithError sends an error JSON response
-func RespondWithError(c *gin.Context, code int, message string) {
-	c.JSON(code, APIResponse{
+// // SuccessResponse sends a custom success response.
+func SuccessResponse(c *gin.Context, status int, message string, data interface{}) {
+	c.JSON(status, structs.SuccessResponse{
+		Success: true,
 		Message: message,
-		Error:   true,
+		Data:    data,
 	})
 }
 
-// RespondWithJSON sends a success JSON response
-func RespondWithJSON(c *gin.Context, code int, data interface{}) {
-	c.JSON(code, data)
+// // ErrorResponse sends a custom error response.
+func ErrorResponse(c *gin.Context, status int, message string, errors interface{}) {
+	c.JSON(status, structs.ErrorResponse{
+		Success: false,
+		Message: message,
+		Errors:  errors,
+	})
+}
+
+// // You can create more specific error helpers for common scenarios
+func ValidationErrorResponse(c *gin.Context, errors interface{}) {
+	c.JSON(http.StatusUnprocessableEntity, structs.ErrorResponse{
+		Success: false,
+		Message: "Validation failed",
+		Errors:  errors,
+	})
 }

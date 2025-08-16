@@ -1,0 +1,2 @@
+# confam-api/controllers
+controllers\auth_controller.go:75:12: undefined: ac
