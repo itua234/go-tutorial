@@ -47,7 +47,7 @@ func (s *AuthService) Login(ctx context.Context, req structs.LoginRequest) (stri
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return "", errors.New("Oops!, your email or password is invalid")
 		}
-		return "", errors.New("An internal server error occurred. Please try again later.")
+		return "", errors.New("An internal server error occurred. Please try again later")
 	}
 
 	if err := utils.ComparePasswordAndHash(req.Password, *company.Password); err != nil {

@@ -1,98 +1,114 @@
 package services
 
 import (
-	"bytes"
 	"confam-api/models"
+	repositories "confam-api/repositories"
 	"confam-api/utils"
 	"encoding/json"
-	"errors"
-	"log"
-	"net/http"
+	"strings"
 	"time"
-
-	"confam-api/dto"
-
-	"gorm.io/gorm"
 )
 
+type Identity struct {
+	Type   string `json:"type"`
+	Number string `json:"number"`
+}
+type CustomerInput struct {
+	Name     string   `json:"name"`
+	Email    string   `json:"email"`
+	Address  string   `json:"address"`
+	Identity Identity `json:"identity"`
+}
+type KycRequestInput struct {
+	Customer     CustomerInput `json:"customer"`
+	Reference    string        `json:"reference"`
+	RedirectURL  string        `json:"redirect_url"`
+	KYCLevel     string        `json:"kyc_level"`
+	BankAccounts bool          `json:"bank_accounts"`
+}
+
 type KYCService struct {
-	DB *gorm.DB
+	customerRepo repositories.CustomerRepository
+	requestRepo  repositories.RequestRepository
 }
 
-func NewKYCService(db *gorm.DB) *KYCService {
-	return &KYCService{DB: db}
+func NewKYCService(customerRepo repositories.CustomerRepository, requestRepo repositories.RequestRepository) *KYCService {
+	return &KYCService{
+		customerRepo: customerRepo,
+		requestRepo:  requestRepo,
+	}
 }
 
-func (s *KYCService) FindOrCreateCustomer(
-	input dto.CustomerInput,
-) (*models.Customer, error) {
-	var customer models.Customer
-	emailHash := utils.HashFunction(input.Email)
-	result := s.DB.Where("email_hash = ?", emailHash).First(&customer)
-	if result.Error == nil {
-		return &customer, nil
+func (s *KYCService) ValidateIdentityType(identityType string) bool {
+	validTypes := []string{"BVN", "NIN"}
+	for _, t := range validTypes {
+		if strings.EqualFold(t, identityType) {
+			return true
+		}
 	}
-	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, result.Error
+	return false
+}
+
+func (s *KYCService) FindOrCreateCustomer(req CustomerInput) (*models.Customer, error) {
+	hash := utils.HashFunction(req.Email)
+	customer, err := s.customerRepo.FindByEmailHash(hash)
+	if err != nil {
+		return nil, err
 	}
-	customer = models.Customer{
+	if customer != nil {
+		return customer, nil
+	}
+
+	customer = &models.Customer{
 		Token:            utils.GenerateToken(),
-		Email:            input.Email,
-		EmailHash:        emailHash,
+		Email:            req.Email,
+		EmailHash:        hash,
 		Status:           "pending",
 		KYCLevelAchieved: "none",
 		IsBlacklisted:    false,
 	}
-	if err := s.DB.Create(&customer).Error; err != nil {
+	if err := s.customerRepo.Create(customer); err != nil {
 		return nil, err
 	}
-	return &customer, nil
+
+	identity := &models.Identity{
+		CustomerID: customer.ID,
+		Type:       models.IdentityType(req.Identity.Type),
+		Value:      utils.Encrypt(req.Identity.Number),
+	}
+	if err := s.customerRepo.CreateIdentity(identity); err != nil {
+		return nil, err
+	}
+
+	return customer, nil
 }
 
-func (s *KYCService) CreateKYCRequest(
-	req dto.KycRequestInput,
-	app models.App,
-) (*models.Request, error) {
-	var request models.Request
-	kycToken := utils.GenerateToken()
+func (s *KYCService) CreateKYCRequest(app models.App, req KycRequestInput) (*models.Request, error) {
+	// Ensure unique reference
+	// count, err := s.requestRepo.CountByReference(req.Reference)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// if count > 0 {
+	// 	return nil, errors.New("duplicate reference")
+	// }
+
 	customerBytes, _ := json.Marshal(req.Customer)
 	encryptedData := utils.Encrypt(string(customerBytes))
-	request = models.Request{
+
+	request := &models.Request{
 		CompanyID:             app.CompanyID,
 		Reference:             req.Reference,
 		RedirectURL:           req.RedirectURL,
 		KYCLevel:              req.KYCLevel,
 		BankAccountsRequested: req.BankAccounts,
-		KYCToken:              kycToken,
+		KYCToken:              utils.GenerateToken(),
 		TokenExpiresAt:        time.Now().Add(1 * time.Hour),
 		EncryptedData:         &encryptedData,
 	}
-	if err := s.DB.Create(&request).Error; err != nil {
+
+	if err := s.requestRepo.Create(request); err != nil {
 		return nil, err
 	}
-	return &request, nil
-}
-
-func (s *KYCService) SendWebhook(
-	webhookURL,
-	event string,
-	data any,
-) {
-	payload := map[string]any{
-		"event": event,
-		"data":  data,
-	}
-	log.Println(payload)
-	b, err := json.Marshal(payload)
-	if err != nil {
-		log.Println("Failed to marshal webhook payload:", err)
-		return
-	}
-	response, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(b))
-	if err != nil {
-		log.Println("Failed to send webhook:", err)
-		return
-	}
-	defer response.Body.Close()
-	log.Println("Webhook sent, status:", response.Status)
+	return request, nil
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"sync"
 
 	database "confam-api/database"
 	routes "confam-api/routes"
@@ -18,6 +19,21 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
+
+var once sync.Once
+
+type singleton struct {
+	Data string
+}
+
+var instance *singleton
+
+func GetInstance() *singleton {
+	once.Do(func() {
+		instance = &singleton{Data: "This is a string"}
+	})
+	return instance
+}
 
 func nonempty(strings []string) []string {
 	i := 0
@@ -57,6 +73,14 @@ func main() {
 	// ); err != nil {
 	// 	log.Fatal(err)
 	// }
+
+	s1 := GetInstance()
+	s2 := GetInstance()
+
+	fmt.Printf("s1: %p\n", s1) // %p prints the memory address
+	fmt.Printf("s2: %p\n", s2)
+	fmt.Printf("Are they the same instance? %t\n", s1 == s2)
+	fmt.Println(s1.Data)
 
 	// Apply middleware
 	router.Use(middlewares.CorsMiddleware())
