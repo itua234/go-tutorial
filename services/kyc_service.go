@@ -4,6 +4,7 @@ import (
 	"confam-api/models"
 	repositories "confam-api/repositories"
 	"confam-api/utils"
+	"context"
 	"encoding/json"
 	"strings"
 	"time"
@@ -27,19 +28,28 @@ type KycRequestInput struct {
 	BankAccounts bool          `json:"bank_accounts"`
 }
 
-type KYCService struct {
-	customerRepo repositories.CustomerRepository
-	requestRepo  repositories.RequestRepository
+type IKycService interface {
+	ValidateIdentityType(ctx context.Context, identityType string) bool
+	FindOrCreateCustomer(ctx context.Context, req CustomerInput) (*models.Customer, error)
+	CreateKYCRequest(ctx context.Context, app models.App, req KycRequestInput) (*models.Request, error)
 }
 
-func NewKYCService(customerRepo repositories.CustomerRepository, requestRepo repositories.RequestRepository) *KYCService {
+type KYCService struct {
+	customerRepo repositories.ICustomerRepository
+	requestRepo  repositories.IRequestRepository
+}
+
+func NewKYCService(
+	customerRepo repositories.ICustomerRepository,
+	requestRepo repositories.IRequestRepository,
+) *KYCService {
 	return &KYCService{
 		customerRepo: customerRepo,
 		requestRepo:  requestRepo,
 	}
 }
 
-func (s *KYCService) ValidateIdentityType(identityType string) bool {
+func (s *KYCService) ValidateIdentityType(ctx context.Context, identityType string) bool {
 	validTypes := []string{"BVN", "NIN"}
 	for _, t := range validTypes {
 		if strings.EqualFold(t, identityType) {
@@ -49,7 +59,7 @@ func (s *KYCService) ValidateIdentityType(identityType string) bool {
 	return false
 }
 
-func (s *KYCService) FindOrCreateCustomer(req CustomerInput) (*models.Customer, error) {
+func (s *KYCService) FindOrCreateCustomer(ctx context.Context, req CustomerInput) (*models.Customer, error) {
 	hash := utils.HashFunction(req.Email)
 	customer, err := s.customerRepo.FindByEmailHash(hash)
 	if err != nil {
@@ -83,7 +93,11 @@ func (s *KYCService) FindOrCreateCustomer(req CustomerInput) (*models.Customer, 
 	return customer, nil
 }
 
-func (s *KYCService) CreateKYCRequest(app models.App, req KycRequestInput) (*models.Request, error) {
+func (s *KYCService) CreateKYCRequest(
+	ctx context.Context,
+	app models.App,
+	req KycRequestInput,
+) (*models.Request, error) {
 	// Ensure unique reference
 	// count, err := s.requestRepo.CountByReference(req.Reference)
 	// if err != nil {

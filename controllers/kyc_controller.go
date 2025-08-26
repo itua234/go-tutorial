@@ -9,6 +9,7 @@ import (
 
 	"confam-api/database"
 	"confam-api/models"
+	services "confam-api/services"
 
 	"confam-api/utils"
 
@@ -39,16 +40,22 @@ type KycRequestInput struct {
 	BankAccounts bool          `json:"bank_accounts"`
 }
 
-func InitiateKyc(c *gin.Context) {
+type kycController struct {
+	kycService services.IKycService
+}
+
+func NewKycController(kycService services.IKycService) *kycController {
+	return &kycController{
+		kycService: kycService,
+	}
+}
+
+func (kc *kycController) InitiateKyc(c *gin.Context) {
 	var input KycRequestInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid request body", "error": true})
 		return
 	}
-	// db := database.DB
-	// customerRepo := repositories.NewCustomerRepository(db)
-	// requestRepo := repositories.NewRequestRepository(db)
-	// service := services.NewKYCService(customerRepo, requestRepo)
 
 	if input.Reference == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid reference, please retry with a unique reference", "error": true})
@@ -88,8 +95,6 @@ func InitiateKyc(c *gin.Context) {
 	if app.WebhookURL != nil {
 		webhookURL = *app.WebhookURL
 	}
-
-	//kycService := services.NewKYCService(database.DB)
 
 	// Lookup or create customer
 	customer, err := findOrCreateCustomer(input.Customer)

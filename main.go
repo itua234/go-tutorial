@@ -12,7 +12,6 @@ import (
 
 	middlewares "confam-api/middlewares"
 
-	controllers "confam-api/controllers"
 	"log"
 	"os"
 
@@ -33,6 +32,14 @@ func GetInstance() *singleton {
 		instance = &singleton{Data: "This is a string"}
 	})
 	return instance
+}
+
+func addTo(base int, vals ...int) []int {
+	out := make([]int, 0, len(vals))
+	for _, v := range vals {
+		out = append(out, base+v)
+	}
+	return out
 }
 
 func nonempty(strings []string) []string {
@@ -96,13 +103,14 @@ func main() {
 	})
 
 	routes.RegisterAuthRoutes(router)
+	routes.RegisterKycRoutes(router)
 
-	router.POST(
-		"/api/v1/allow",
-		middlewares.AuthenticateAppBySecretKey(database.DB),
-		controllers.InitiateKyc,
-	)
-	router.GET("/api/v1/allow/:kyc_token", controllers.FetchKycRequest)
+	// router.POST(
+	// 	"/api/v1/allow",
+	// 	middlewares.AuthenticateAppBySecretKey(database.DB),
+	// 	controllers.InitiateKyc,
+	// )
+	// router.GET("/api/v1/allow/:kyc_token", controllers.FetchKycRequest)
 
 	port := os.Getenv("PORT")
 	if port == "" {

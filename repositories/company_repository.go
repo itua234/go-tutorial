@@ -8,9 +8,14 @@ import (
 )
 
 type ICompanyRepository interface {
+	Create(ctx context.Context, company *models.Company) error
 	FindByID(ctx context.Context, id string) (*models.Company, error)
 	FindByEmail(ctx context.Context, email string) (*models.Company, error)
-	Create(ctx context.Context, company *models.Company) error
+	GetAll(ctx context.Context, limit, offset int) ([]models.Company, error)
+	Update(ctx context.Context, company *models.Company) error
+	Delete(ctx context.Context, id string) error
+	// Utility
+	Count(ctx context.Context) (int64, error)
 }
 
 type CompanyRepository struct {
@@ -19,6 +24,11 @@ type CompanyRepository struct {
 
 func NewCompanyRepository(db *gorm.DB) *CompanyRepository {
 	return &CompanyRepository{db: db}
+}
+
+// Create saves a new company record to the database.
+func (r *CompanyRepository) Create(ctx context.Context, company *models.Company) error {
+	return r.db.WithContext(ctx).Create(company).Error
 }
 
 func (r *CompanyRepository) FindByID(ctx context.Context, id string) (*models.Company, error) {
@@ -36,7 +46,40 @@ func (r *CompanyRepository) FindByEmail(ctx context.Context, email string) (*mod
 	return &company, result.Error
 }
 
-// Create saves a new company record to the database.
-func (r *CompanyRepository) Create(ctx context.Context, company *models.Company) error {
-	return r.db.WithContext(ctx).Create(company).Error
+func (r *CompanyRepository) GetAll(ctx context.Context, limit, offset int) ([]models.Company, error) {
+	var companies []models.Company
+	query := r.db.WithContext(ctx)
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+	if offset > 0 {
+		query = query.Offset(offset)
+	}
+	err := query.Find(&companies).Error
+	return companies, err
+}
+
+func (r *CompanyRepository) Update(ctx context.Context, company *models.Company) error {
+	return r.db.WithContext(ctx).
+		Save(company).Error
+}
+
+func (r *CompanyRepository) UpdateFields(ctx context.Context, id string, fields map[string]interface{}) error {
+	return r.db.WithContext(ctx).
+		Model(&models.Company{}).
+		Where("id = ?", id).
+		Updates(fields).Error
+}
+
+func (r *CompanyRepository) Delete(ctx context.Context, id string) error {
+	return r.db.WithContext(ctx).
+		Delete(&models.Company{}, "id = ?", id).Error
+}
+
+func (r *CompanyRepository) Count(ctx context.Context) (int64, error) {
+	var count int64
+	err := r.db.WithContext(ctx).
+		Model(&models.Company{}).
+		Count(&count).Error
+	return count, err
 }
