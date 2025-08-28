@@ -35,6 +35,7 @@ type IKycService interface {
 	FindOrCreateCustomer(ctx context.Context, req structs.CustomerInput) (*models.Customer, error)
 	CreateKYCRequest(ctx context.Context, app models.App, req structs.KycRequestInput) (*models.Request, error)
 	FetchKycRequest(ctx context.Context, kycToken string) (*models.Request, *models.Customer, error)
+	IsReferenceUnique(ctx context.Context, reference string) (bool, error)
 }
 
 type KYCService struct {
@@ -162,4 +163,13 @@ func (s *KYCService) FetchKycRequest(ctx context.Context, kycToken string) (*mod
 	}
 
 	return request, customer, nil
+}
+
+func (s *KYCService) IsReferenceUnique(ctx context.Context, reference string) (bool, error) {
+	// Use the repository method here.
+	count, err := s.requestRepo.CountByReference(reference)
+	if err != nil {
+		return false, err
+	}
+	return count == 0, nil
 }

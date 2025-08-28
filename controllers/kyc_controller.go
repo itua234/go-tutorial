@@ -5,33 +5,17 @@ import (
 	"log"
 	"net/http"
 
-	"confam-api/database"
 	models "confam-api/models"
 	services "confam-api/services"
 	structs "confam-api/structs"
+	response "confam-api/utils"
+	utils "confam-api/utils"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 	// import your encryption and token helpers
 )
-
-type Identity struct {
-	Type   string `json:"type"`
-	Number string `json:"number"`
-}
-type CustomerInput struct {
-	Name     string   `json:"name"`
-	Email    string   `json:"email"`
-	Address  string   `json:"address"`
-	Identity Identity `json:"identity"`
-}
-type KycRequestInput struct {
-	Customer     CustomerInput `json:"customer"`
-	Reference    string        `json:"reference"`
-	RedirectURL  string        `json:"redirect_url"`
-	KYCLevel     string        `json:"kyc_level"`
-	BankAccounts bool          `json:"bank_accounts"`
-}
 
 type kycController struct {
 	kycService     services.IKycService
@@ -49,43 +33,43 @@ func NewKycController(
 }
 
 func (ctrl *kycController) InitiateKyc(c *gin.Context) {
-	var input structs.KycRequestInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid request body", "error": true})
+	var req structs.KycRequestInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+			errors := utils.FormatValidationErrors(validationErrors)
+			response.ValidationErrorResponse(c, errors)
+			return
+		}
+		response.ErrorResponse(c, http.StatusBadRequest, "Bad Request", nil)
 		return
 	}
 
-	if input.Reference == "" {
+	if req.Reference == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid reference, please retry with a unique reference", "error": true})
 		return
 	} else {
-		var count int64
-		_ = database.DB.Model(&models.Request{}).Where("reference = ?", input.Reference).Count(&count).Error
-		if count > 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "please provide a unique reference", "error": true})
+		isUnique, _ := ctrl.kycService.IsReferenceUnique(c, req.Reference)
+		if !isUnique {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Please provide a unique reference", "error": true})
 			return
 		}
 	}
-	cust := input.Customer
-	if cust.Name == "" || cust.Email == "" || cust.Address == "" || cust.Identity.Type == "" || cust.Identity.Number == "" || input.RedirectURL == "" || input.KYCLevel == "" {
+	cust := req.Customer
+	if cust.Name == "" || cust.Email == "" || cust.Address == "" || cust.Identity.Type == "" || cust.Identity.Number == "" || req.RedirectURL == "" || req.KYCLevel == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Missing required customer or request fields.", "error": true})
 		return
 	}
 
-	if !ctrl.kycService.ValidateIdentityType(c, input.Customer.Identity.Type) {
+	if !ctrl.kycService.ValidateIdentityType(c, req.Customer.Identity.Type) {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Invalid identity type: " + input.Customer.Identity.Type + ". Must be one of BVN, NIN.",
+			"message": "Invalid identity type: " + req.Customer.Identity.Type + ". Must be one of BVN, NIN.",
 			"error":   true,
 		})
 		return
 	}
 
 	// Get app from context (set by middleware)
-	appVal, exists := c.Get("app")
-	if !exists {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "App not found in context", "error": true})
-		return
-	}
+	appVal, _ := c.Get("app")
 	app := appVal.(models.App)
 	webhookURL := ""
 	if app.WebhookURL != nil {
@@ -93,14 +77,14 @@ func (ctrl *kycController) InitiateKyc(c *gin.Context) {
 	}
 
 	// Lookup or create customer
-	customer, err := ctrl.kycService.FindOrCreateCustomer(c, input.Customer)
+	customer, err := ctrl.kycService.FindOrCreateCustomer(c, req.Customer)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to process customer", "error": true})
 		return
 	}
 
 	// Create request in transaction
-	request, err := ctrl.kycService.CreateKYCRequest(c, app, input)
+	request, err := ctrl.kycService.CreateKYCRequest(c, app, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create request", "error": true})
 		return
