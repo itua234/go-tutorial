@@ -19,9 +19,10 @@ func RegisterKycRoutes(router *gin.Engine) {
 
 	// 3. Create Service instances, injecting repositories
 	kycService := services.NewKYCService(customerRepo, requestRepo)
+	webhookService := services.NewWebhookService()
 
 	// 4. Create Controller instances, injecting services
-	kycController := controllers.NewKycController(kycService)
+	kycController := controllers.NewKycController(kycService, webhookService)
 
 	api := router.Group("/api/v1")
 	{
@@ -32,7 +33,7 @@ func RegisterKycRoutes(router *gin.Engine) {
 				middlewares.AuthenticateAppBySecretKey(database.DB),
 				kycController.InitiateKyc,
 			)
-			//kyc.GET("/:kyc_token", kycController.FetchKycRequest)
+			kyc.GET("/:kyc_token", kycController.FetchKycRequest)
 		}
 	}
 }

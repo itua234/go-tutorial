@@ -3,9 +3,11 @@ package services
 import (
 	"confam-api/models"
 	repositories "confam-api/repositories"
+	structs "confam-api/structs"
 	"confam-api/utils"
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 )
@@ -30,8 +32,9 @@ type KycRequestInput struct {
 
 type IKycService interface {
 	ValidateIdentityType(ctx context.Context, identityType string) bool
-	FindOrCreateCustomer(ctx context.Context, req CustomerInput) (*models.Customer, error)
-	CreateKYCRequest(ctx context.Context, app models.App, req KycRequestInput) (*models.Request, error)
+	FindOrCreateCustomer(ctx context.Context, req structs.CustomerInput) (*models.Customer, error)
+	CreateKYCRequest(ctx context.Context, app models.App, req structs.KycRequestInput) (*models.Request, error)
+	FetchKycRequest(ctx context.Context, kycToken string) (*models.Request, *models.Customer, error)
 }
 
 type KYCService struct {
@@ -59,7 +62,7 @@ func (s *KYCService) ValidateIdentityType(ctx context.Context, identityType stri
 	return false
 }
 
-func (s *KYCService) FindOrCreateCustomer(ctx context.Context, req CustomerInput) (*models.Customer, error) {
+func (s *KYCService) FindOrCreateCustomer(ctx context.Context, req structs.CustomerInput) (*models.Customer, error) {
 	hash := utils.HashFunction(req.Email)
 	customer, err := s.customerRepo.FindByEmailHash(hash)
 	if err != nil {
@@ -96,7 +99,7 @@ func (s *KYCService) FindOrCreateCustomer(ctx context.Context, req CustomerInput
 func (s *KYCService) CreateKYCRequest(
 	ctx context.Context,
 	app models.App,
-	req KycRequestInput,
+	req structs.KycRequestInput,
 ) (*models.Request, error) {
 	// Ensure unique reference
 	// count, err := s.requestRepo.CountByReference(req.Reference)
@@ -125,4 +128,38 @@ func (s *KYCService) CreateKYCRequest(
 		return nil, err
 	}
 	return request, nil
+}
+
+func (s *KYCService) FetchKycRequest(ctx context.Context, kycToken string) (*models.Request, *models.Customer, error) {
+	// Use the repository to find the request by its token.
+	request, err := s.requestRepo.FindByToken(kycToken)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Business logic for status checks.
+	if request.Status == "completed" {
+		return nil, nil, fmt.Errorf("KYC request already completed")
+	}
+	if request.Status == "failed" {
+		return nil, nil, fmt.Errorf("KYC request failed")
+	}
+
+	// Use the repository to find the associated customer.
+	var decrypted map[string]interface{}
+	if err := json.Unmarshal([]byte(*request.EncryptedData), &decrypted); err != nil {
+		return nil, nil, fmt.Errorf("failed to decrypt customer data")
+	}
+
+	email, ok := decrypted["email"].(string)
+	if !ok {
+		return nil, nil, fmt.Errorf("customer email not found in decrypted data")
+	}
+
+	customer, err := s.customerRepo.FindByEmailHash(utils.HashFunction(email))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return request, customer, nil
 }

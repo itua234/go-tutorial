@@ -41,8 +41,11 @@ func (r *CustomerRepository) FindByEmail(ctx context.Context, email string) (*mo
 // FindByEmailHash finds a Customer by its email_hash.
 func (r *CustomerRepository) FindByEmailHash(email_hash string) (*models.Customer, error) {
 	var customer models.Customer
-	result := r.db.First(&customer, "email_hash = ?", email_hash)
-	return &customer, result.Error
+	result := r.db.Preload("Identities").First(&customer, "email_hash = ?", email_hash)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &customer, nil
 }
 
 // Create saves a new Customer record to the database.

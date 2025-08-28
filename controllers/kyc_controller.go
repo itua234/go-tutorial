@@ -1,25 +1,18 @@
 package controllers
 
 import (
-	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
-	"strings"
-	"time"
 
 	"confam-api/database"
-	"confam-api/models"
+	models "confam-api/models"
 	services "confam-api/services"
-
-	"confam-api/utils"
+	structs "confam-api/structs"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-
 	// import your encryption and token helpers
-	"bytes"
-	"errors"
-	"slices"
 )
 
 type Identity struct {
@@ -41,17 +34,22 @@ type KycRequestInput struct {
 }
 
 type kycController struct {
-	kycService services.IKycService
+	kycService     services.IKycService
+	webhookService services.IWebhookService
 }
 
-func NewKycController(kycService services.IKycService) *kycController {
+func NewKycController(
+	kycService services.IKycService,
+	webhookService services.IWebhookService,
+) *kycController {
 	return &kycController{
-		kycService: kycService,
+		kycService:     kycService,
+		webhookService: webhookService,
 	}
 }
 
-func (kc *kycController) InitiateKyc(c *gin.Context) {
-	var input KycRequestInput
+func (ctrl *kycController) InitiateKyc(c *gin.Context) {
+	var input structs.KycRequestInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid request body", "error": true})
 		return
@@ -74,11 +72,9 @@ func (kc *kycController) InitiateKyc(c *gin.Context) {
 		return
 	}
 
-	validIdentityTypes := []string{"BVN", "NIN"}
-	found := slices.Contains(validIdentityTypes, strings.ToUpper(cust.Identity.Type))
-	if !found {
+	if !ctrl.kycService.ValidateIdentityType(c, input.Customer.Identity.Type) {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Invalid identity type: " + cust.Identity.Type + ". Must be one of BVN, NIN.",
+			"message": "Invalid identity type: " + input.Customer.Identity.Type + ". Must be one of BVN, NIN.",
 			"error":   true,
 		})
 		return
@@ -97,29 +93,17 @@ func (kc *kycController) InitiateKyc(c *gin.Context) {
 	}
 
 	// Lookup or create customer
-	customer, err := findOrCreateCustomer(input.Customer)
+	customer, err := ctrl.kycService.FindOrCreateCustomer(c, input.Customer)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to process customer", "error": true})
 		return
 	}
 
 	// Create request in transaction
-	request, err := createKYCRequest(input, app)
+	request, err := ctrl.kycService.CreateKYCRequest(c, app, input)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create request", "error": true})
 		return
-	}
-
-	// Prepare response data
-	data := gin.H{
-		"id":             request.KYCToken,
-		"customer":       customer.Token, // or request.KYCToken if no token
-		"allow_url":      request.AllowURL,
-		"reference":      request.Reference,
-		"redirect_url":   request.RedirectURL,
-		"bank_accounts":  request.BankAccountsRequested,
-		"kyc_level":      request.KYCLevel,
-		"is_blacklisted": false,
 	}
 
 	// Send webhook (non-blocking, just log for now)
@@ -137,7 +121,19 @@ func (kc *kycController) InitiateKyc(c *gin.Context) {
 			"meta":           map[string]interface{}{},
 		}
 		log.Println(data)
-		//go sendWebhook(webhookURL, "kyc.initiation.requested", data) // Non-blocking
+		go ctrl.webhookService.SendWebhook(webhookURL, "kyc.initiation.requested", data)
+	}
+
+	// Prepare response data
+	data := gin.H{
+		"id":             request.KYCToken,
+		"customer":       customer.Token, // or request.KYCToken if no token
+		"allow_url":      request.AllowURL,
+		"reference":      request.Reference,
+		"redirect_url":   request.RedirectURL,
+		"bank_accounts":  request.BankAccountsRequested,
+		"kyc_level":      request.KYCLevel,
+		"is_blacklisted": false,
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -147,96 +143,7 @@ func (kc *kycController) InitiateKyc(c *gin.Context) {
 	})
 }
 
-func findOrCreateCustomer(input CustomerInput) (*models.Customer, error) {
-	// ...lookup or create customer...
-	var customer models.Customer
-	emailHash := utils.HashFunction(input.Email)
-	// Try to find customer by email_hash
-	result := database.DB.Where("email_hash = ?", emailHash).First(&customer)
-	if result.Error == nil {
-		// Found existing customer
-		return &customer, nil
-	}
-	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		// Some DB error occurred
-		return nil, result.Error
-	}
-
-	// Not found, create new
-	customer = models.Customer{
-		Token:            utils.GenerateToken(),
-		Email:            input.Email,
-		EmailHash:        emailHash,
-		Status:           "pending",
-		KYCLevelAchieved: "none",
-		IsBlacklisted:    false,
-	}
-	if err := database.DB.Create(&customer).Error; err != nil {
-		return nil, err
-	}
-
-	identity := models.Identity{
-		CustomerID: customer.ID,
-		Type:       models.IdentityType(input.Identity.Type),
-		Value:      utils.Encrypt(input.Identity.Number),
-	}
-	database.DB.Create(&identity)
-
-	return &customer, nil
-}
-
-func createKYCRequest(
-	req KycRequestInput,
-	app models.App,
-) (*models.Request, error) {
-	var request models.Request
-	kycToken := utils.GenerateToken()
-	customerBytes, _ := json.Marshal(req.Customer)
-	encryptedData := utils.Encrypt(string(customerBytes))
-
-	request = models.Request{
-		CompanyID:             app.CompanyID,
-		Reference:             req.Reference,
-		RedirectURL:           req.RedirectURL,
-		KYCLevel:              req.KYCLevel,
-		BankAccountsRequested: req.BankAccounts,
-		KYCToken:              kycToken,
-		TokenExpiresAt:        time.Now().Add(1 * time.Hour),
-		EncryptedData:         &encryptedData,
-	}
-	if err := database.DB.Create(&request).Error; err != nil {
-		return nil, err
-	}
-	return &request, nil
-}
-
-func sendWebhook(webhookURL, event string, data any) {
-	payload := map[string]any{
-		"event": event,
-		"data":  data,
-	}
-
-	// Log the payload
-	log.Println(payload)
-
-	// Marshal to JSON
-	b, err := json.Marshal(payload)
-	if err != nil {
-		log.Println("Failed to marshal webhook payload:", err)
-		return
-	}
-
-	// Send POST request
-	response, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(b))
-	if err != nil {
-		log.Println("Failed to send webhook:", err)
-		return
-	}
-	defer response.Body.Close()
-	log.Println("Webhook sent, status:", response.Status)
-}
-
-func FetchKycRequest(c *gin.Context) {
+func (ctrl *kycController) FetchKycRequest(c *gin.Context) {
 	kyc_token := c.Param("kyc_token")
 	if kyc_token == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -246,37 +153,38 @@ func FetchKycRequest(c *gin.Context) {
 		return
 	}
 
-	var request models.Request
-	result := database.DB.Where("kyc_token = ?", kyc_token).First(&request)
-	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{
+	// Call the service to handle all the core logic.
+	request, customer, err := ctrl.kycService.FetchKycRequest(c, kyc_token)
+	if err != nil {
+		log.Printf("Error fetching KYC request: %v", err)
+
+		// Use a switch statement to handle different service-level errors.
+		var status int
+		var message string
+
+		switch {
+		case errors.Is(err, gorm.ErrRecordNotFound):
+			status = http.StatusNotFound
+			message = "KYC request not found"
+		case err.Error() == "KYC request already completed":
+			status = http.StatusForbidden
+			message = "KYC request already completed."
+		case err.Error() == "KYC request failed":
+			status = http.StatusForbidden
+			message = "KYC request failed. Please try again."
+		default:
+			status = http.StatusInternalServerError
+			message = "Failed to process request"
+		}
+
+		c.JSON(status, gin.H{
 			"error":   true,
-			"message": "KYC request not found",
-		})
-		return
-	} else if request.Status == "completed" {
-		log.Printf("KYC request already completed: %s", kyc_token)
-		c.JSON(http.StatusForbidden, gin.H{
-			"error":   true,
-			"message": "KYC request already completed.",
-		})
-		return
-	} else if request.Status == "failed" {
-		log.Printf("KYC request failed: %s", kyc_token)
-		c.JSON(http.StatusForbidden, gin.H{
-			"error":   true,
-			"message": "KYC request failed. Please try again.",
+			"message": message,
 		})
 		return
 	}
 
-	var decrypted map[string]interface{}
-	json.Unmarshal([]byte(*request.EncryptedData), &decrypted)
-	var customer models.Customer
-	database.DB.Preload("Identities").
-		Where("email_hash = ?", utils.HashFunction(decrypted["email"].(string))).
-		First(&customer)
-
+	// Prepare the final response data based on the results from the service.
 	c.JSON(http.StatusOK, gin.H{
 		"message": "KYC request fetched successfully",
 		"results": gin.H{
