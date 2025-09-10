@@ -30,7 +30,7 @@ func Seed(db *gorm.DB, redisClient *redis.Client) error {
 		ID:                   uuid.New().String(),
 		Name:                 "Tech Innovators Inc.",
 		Logo:                 ptr("https://example.com/logo1.png"),
-		Email:                "johndoe@example.com",
+		Email:                "johndoe2@example.com",
 		Password:             ptr(string(hashedPassword)),
 		Domain:               ptr("techinnovators.com"),
 		WebhookURL:           ptr("https://webhooks.techinnovators.com"),

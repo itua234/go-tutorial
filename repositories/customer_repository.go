@@ -13,6 +13,7 @@ type ICustomerRepository interface {
 	FindByEmailHash(email_hash string) (*models.Customer, error)
 	Create(customer *models.Customer) error
 	CreateIdentity(identity *models.Identity) error
+	CreateNextOfKin(next_of_kin *models.NextOfKin) error
 }
 
 type CustomerRepository struct {
@@ -54,6 +55,9 @@ func (r *CustomerRepository) Create(customer *models.Customer) error {
 }
 
 func (r *CustomerRepository) CreateIdentity(identity *models.Identity) error {
-	//return r.db.Create(identity).Error
 	return r.db.Create(identity).Error
+}
+
+func (r *CustomerRepository) CreateNextOfKin(next_of_kin *models.NextOfKin) error {
+	return r.db.Create(next_of_kin).Error
 }

@@ -168,6 +168,7 @@ func (ctrl *kycController) FetchKycRequest(c *gin.Context) {
 		return
 	}
 
+	//customer["bank_accounts"] = []string{}
 	// Prepare the final response data based on the results from the service.
 	c.JSON(http.StatusOK, gin.H{
 		"message": "KYC request fetched successfully",
