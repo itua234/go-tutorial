@@ -19,14 +19,27 @@ import (
 )
 
 func main() {
-	godotenv.Load()
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	cfg := database.Config{
+		Username: os.Getenv("DB_USERNAME"),
+		Password: os.Getenv("DB_PASSWORD"),
+		Host:     os.Getenv("DB_HOST"),
+		Port:     os.Getenv("DB_PORT"),
+		Database: os.Getenv("DB_DATABASE"),
+	}
+	if err := database.Connect(cfg); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("Database connected.")
 	// Call the setup function to register custom validators
 	utils.SetupValidator()
 	client.InitRedisClient() // Initialize Redis
 	router := gin.Default()
 	// Set Gin to release mode to reduce noise
 	//gin.SetMode(gin.ReleaseMode)
-	database.ConnectDatabase()
 
 	router.MaxMultipartMemory = 8 << 20 //8Mb
 	router.POST("/api/v1/upload", func(c *gin.Context) {

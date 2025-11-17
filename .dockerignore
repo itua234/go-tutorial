@@ -1,0 +1,14 @@
+# .dockerignore
+**/__MACOSX
+**/Thumbs.db
+**/.git
+**/.gitignore
+**/vendor
+**/.vscode
+**/.idea
+Dockerfile
+.dockerignore
+build/
+*.bak
+*.exe
+.env
