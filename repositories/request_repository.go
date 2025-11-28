@@ -17,7 +17,7 @@ type RequestRepository struct {
 	db *gorm.DB
 }
 
-func NewRequestRepository(db *gorm.DB) *RequestRepository {
+func NewRequestRepository(db *gorm.DB) IRequestRepository {
 	return &RequestRepository{db: db}
 }
 
