@@ -1,24 +1,25 @@
 package main
 
 import (
+	database "confam-api/internal/database"
+	middlewares "confam-api/internal/middlewares"
+	redis "confam-api/internal/redis"
+	routes "confam-api/internal/routes"
+	"confam-api/internal/validate"
+	"context"
 	"fmt"
-	"net/http"
-
-	database "confam-api/database"
-	routes "confam-api/routes"
-	client "confam-api/utils"
-	utils "confam-api/utils"
-
-	middlewares "confam-api/middlewares"
-
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
 
+var RedisClient *redis.Client
+
 func main() {
+	ctx := context.Background()
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Error loading .env file")
 	}
@@ -34,9 +35,24 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Println("Database connected.")
+
 	// Call the setup function to register custom validators
-	utils.SetupValidator()
-	client.InitRedisClient() // Initialize Redis
+	validate.SetupValidator()
+
+	rdb, err := redis.NewClient(ctx)
+	if err != nil {
+		log.Fatalf("Critical error initializing services: %v", err)
+	}
+	RedisClient = rdb
+	fmt.Println("Redis connected.")
+	defer func() {
+		if err := rdb.Close(); err != nil {
+			log.Printf("Error closing Redis client: %v", err)
+		} else {
+			log.Println("Redis client closed.")
+		}
+	}()
+
 	router := gin.Default()
 	// Set Gin to release mode to reduce noise
 	//gin.SetMode(gin.ReleaseMode)
@@ -54,7 +70,7 @@ func main() {
 	})
 	// if err := seeders.Seed(
 	// 	database.DB,
-	// 	client.RedisClient,
+	// 	RedisClient,
 	// ); err != nil {
 	// 	log.Fatal(err)
 	// }
@@ -73,7 +89,7 @@ func main() {
 	})
 
 	routes.RegisterAuthRoutes(router)
-	routes.RegisterKycRoutes(router)
+	routes.RegisterKycRoutes(router, rdb)
 
 	// router.POST(
 	// 	"/api/v1/allow",
